@@ -10,8 +10,10 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
+
 using OpenCvSharp;
 using OpenCvSharp.WpfExtensions;
+
 
 namespace RealtimeWebcam
 {
@@ -25,6 +27,10 @@ namespace RealtimeWebcam
         private DispatcherTimer timer; // UI 스레드에서 일정 간격으로 작업을 수행하기 위한 DispatcherTimer 객체
 
 
+        // 각 필터의 적용 여부를 저장하는 bool 타입 변수 선언
+        private bool isGrayscale; // 흑백 필터 적용 여부
+        private bool isBlur; // 블러 필터 적용 여부
+        private bool isInvert; // 색상 반전 필터 적용 여부
 
         public MainWindow()
         {
@@ -37,49 +43,75 @@ namespace RealtimeWebcam
                                                             // 약 30fps로 프레임을 업데이트한다
             timer.Tick += UpdateFrame; // timer의 Tick 이벤트에 UpdateFrame 메서드를 연결
             timer.Start(); // 타이머를 시작한다
+
+
+            isGrayscale = false;
+            isBlur = false;
+            isInvert = false;
         }
 
 
-        private void UpdateFrame(object sender, EventArgs e)
+        private void UpdateFrame(object? sender, EventArgs e)
         {
             capture.Read(frame); // 웹캠에서 프레임을 읽어와 frame 객체에 저장
-            if (!frame.Empty()) // frame 객체가 비어 있지 않으면, 즉 프레임을 읽어오는 데 성공하면 다음 코드를 실행한다.
+
+            if (!frame.Empty()) // frame 객체가 비어 있지 않으면(프레임을 읽어오는 데 성공하면),
             {
-                imgDisplay.Source = frame.ToBitmapSource(); // frame 객체를 BitmapSource로 변환하여,
-                                                            // imgDisplay 컨트롤의 Source 프로퍼티에 할당한다.
+                Mat filteredFrame = frame.Clone(); // 원본 프레임 복사
+                                                   // (필터를 적용하기 전에 원본 프레임을 복사하여
+                                                   // 필터가 원본 프레임에 영향을 주지 않도록 한다.)
+
+
+                // isGrayscale, isBlur, isInvert 변수 값에 따라 해당 필터를 적용한다.
+                if (isGrayscale) // 흑백 필터 적용
+                {
+                    Cv2.CvtColor(filteredFrame, filteredFrame, ColorConversionCodes.BGR2GRAY);
+                }
+
+
+                if (isBlur) // 블러 필터 적용
+                {
+                    Cv2.Blur(filteredFrame, filteredFrame, new OpenCvSharp.Size(5, 5));
+                }
+
+
+                if (isInvert) // 색상 반전 필터 적용
+                {
+                    Cv2.BitwiseNot(filteredFrame, filteredFrame);
+                }
+
+
+                // 필터링된 이미지를 WPF 컨트롤에 표시
+                imgDisplay.Source = WriteableBitmapConverter.ToWriteableBitmap(filteredFrame);
+
+
+                filteredFrame.Dispose();
             }
+
+
         }
 
-        // 흑백 필터 기능 구현
+
+
+        // GrayscaleButton_Click(), BlurButton_Click(), InvertButton_Click() 메서드:
+        // 각 필터 버튼의 Click 이벤트 핸들러로, 해당 필터의 적용 여부를 토글한다.
         private void GrayscaleButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!frame.Empty())
-            {
-                Mat grayFrame = new Mat();
-                Cv2.CvtColor(frame, grayFrame, ColorConversionCodes.BGR2GRAY);
-                imgDisplay.Source = grayFrame.ToBitmapSource();
-                grayFrame.Dispose();
-            }
+            isGrayscale = !isGrayscale; // 흑백 필터 토글
         }
 
 
         //  블러 필터를 적용
         private void BlurButton_Click(object sender, RoutedEventArgs e)
         {
-            Mat blurFrame = new Mat();
-            Cv2.Blur(frame, blurFrame, new OpenCvSharp.Size(5, 5));
-            imgDisplay.Source = WriteableBitmapConverter.ToWriteableBitmap(blurFrame);
-            blurFrame.Dispose();
+            isBlur = !isBlur; // 블러 필터 토글
         }
 
 
         // 색상 반전 필터를 적용
         private void InvertButton_Click(object sender, RoutedEventArgs e)
         {
-            Mat invertFrame = new Mat();
-            Cv2.BitwiseNot(frame, invertFrame);
-            imgDisplay.Source = WriteableBitmapConverter.ToWriteableBitmap(invertFrame);
-            invertFrame.Dispose();
+            isInvert = !isInvert; // 색상 반전 필터 토글
         }
     }
 }
