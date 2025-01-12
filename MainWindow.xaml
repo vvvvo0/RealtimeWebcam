@@ -5,8 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RealtimeWebcam"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Realtime Webcam" Height="450" Width="800">
+    
     <Grid>
-
+        <Image x:Name="imgDisplay" Stretch="Uniform" />
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10">
+            <Button Content="흑백" Margin="5" Click="GrayscaleButton_Click" />
+            <Button Content="블러" Margin="5" Click="BlurButton_Click" />
+            <Button Content="색상 반전" Margin="5" Click="InvertButton_Click" />
+        </StackPanel>
     </Grid>
 </Window>
