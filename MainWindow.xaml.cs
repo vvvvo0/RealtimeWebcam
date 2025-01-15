@@ -1,13 +1,4 @@
-﻿using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using System.Windows;
 using System.Windows.Threading;
 
 
@@ -36,7 +27,7 @@ namespace RealtimeWebcam
         {
             InitializeComponent();
 
-            capture = new VideoCapture(0); // 기본 웹캠 장치를 사용하여 VideoCapture 객체를 초기화
+            capture = new VideoCapture(0); // 기본 웹캠 장치(0)를 사용하여 VideoCapture 객체를 초기화
             frame = new Mat(); // Mat 객체를 생성
             timer = new DispatcherTimer(); // DispatcherTimer 객체를 생성
             timer.Interval = TimeSpan.FromMilliseconds(33); // 타이머 간격을 33밀리초로 설정하여,
@@ -57,38 +48,45 @@ namespace RealtimeWebcam
 
             if (!frame.Empty()) // frame 객체가 비어 있지 않으면(프레임을 읽어오는 데 성공하면),
             {
-                Mat filteredFrame = frame.Clone(); // 원본 프레임 복사
-                                                   // (필터를 적용하기 전에 원본 프레임을 복사하여
-                                                   // 필터가 원본 프레임에 영향을 주지 않도록 한다.)
 
+                using (Mat filteredFrame = frame.Clone())
+                // Mat filteredFrame = frame.Clone()은 원본 프레임 복사함.
+                // (필터를 적용하기 전에 원본 프레임을 복사하여
+                // 필터가 원본 프레임에 영향을 주지 않도록 한다.)
+                // (Mat 객체는 참조 형식이므로,
+                // Mat 객체를 다른 변수에 할당할 때는 얕은 복사가 수행된다.
+                // 즉, 두 변수가 같은 메모리 영역을 참조하게 된다.
+                // 따라서 이미지 데이터를 복사하려면 Clone() 메서드를 사용해야 한다.)
 
-                // isGrayscale, isBlur, isInvert 변수 값에 따라 해당 필터를 적용한다.
-                if (isGrayscale) // 흑백 필터 적용
                 {
-                    Cv2.CvtColor(filteredFrame, filteredFrame, ColorConversionCodes.BGR2GRAY);
-                }
+                    // isGrayscale, isBlur, isInvert 변수 값에 따라 해당 필터를 적용한다.
+                    if (isGrayscale) // 흑백 필터 적용
+                    {
+                        Cv2.CvtColor(filteredFrame, filteredFrame, ColorConversionCodes.BGR2GRAY);
+                    }
 
 
-                if (isBlur) // 블러 필터 적용
-                {
-                    Cv2.Blur(filteredFrame, filteredFrame, new OpenCvSharp.Size(5, 5));
-                }
+                    if (isBlur) // 블러 필터 적용
+                    {
+                        Cv2.Blur(filteredFrame, filteredFrame, new OpenCvSharp.Size(5, 5));
+                    }
 
 
-                if (isInvert) // 색상 반전 필터 적용
-                {
-                    Cv2.BitwiseNot(filteredFrame, filteredFrame);
-                }
+                    if (isInvert) // 색상 반전 필터 적용
+                    {
+                        Cv2.BitwiseNot(filteredFrame, filteredFrame);
+                    }
 
 
-                // 필터링된 이미지를 WPF 컨트롤에 표시
-                imgDisplay.Source = WriteableBitmapConverter.ToWriteableBitmap(filteredFrame);
+                    // 필터링된 이미지를 WPF 컨트롤에 표시
+                    imgDisplay.Source = WriteableBitmapConverter.ToWriteableBitmap(filteredFrame);
+
+                } // using 블록 종료, filteredFrame.Dispose() 자동 호출됨
 
 
-                filteredFrame.Dispose();
+
+                // filteredFrame.Dispose();
             }
-
-
         }
 
 
